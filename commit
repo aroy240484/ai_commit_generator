@@ -1,0 +1,7 @@
+#!/bin/bash
+
+temp_file=".git/assisted_message.txt"
+psychoanalysis.py > "$temp_file"
+git commit -F "$temp_file" >> /dev/null
+rm "$temp_file"
+git commit --amend
