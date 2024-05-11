@@ -48,7 +48,7 @@ files_diff = subprocess.check_output(
 bedrock_client = boto3.client(service_name=SERVICE, region_name=REGION)
 bedrock_runtime = boto3.client('bedrock-runtime')
 
-configs = { "max_tokens_to_sample": 400, "temperature": 0 }
+configs = { "max_tokens_to_sample": 2000, "temperature": 0 }
 llm = Bedrock(
   client = bedrock_runtime,
   model_id = MODEL_NAME,
