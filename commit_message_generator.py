@@ -2,18 +2,15 @@
 
 import boto3
 import subprocess
-from langchain.chains.llm import LLMChain
-from langchain.llms import Bedrock
-from langchain.prompts import PromptTemplate
+import json
 
-SERVICE = 'bedrock'
+SERVICE = 'bedrock-runtime'
 REGION = 'us-east-1'
-MODEL_NAME = 'anthropic.claude-v2:1'
+MODEL_NAME = 'anthropic.claude-3-sonnet-20240229-v1:0'
 PROMPT_TEMPLATE = """
 
 Human:
-You are a git commit message generator. Follow the instructions provided in the <instructions></instructions> XML tags to generate
-the commit message for the diff provided in the <diff></diff> XML tags.
+You are a git commit message generator. Follow the instructions provided in the <instructions></instructions> XML tags to generate the commit message for the diff provided in the <diff></diff> XML tags. Only respond with the commit message without any preamble or ending.
 
 <instructions>
 Please generate a commit message with the format:
@@ -38,6 +35,7 @@ git_diff_command = [
   'diff',
   '--staged'
 ]
+
 files_diff = subprocess.check_output(
   git_diff_command, 
   stderr = subprocess.STDOUT,
@@ -46,25 +44,28 @@ files_diff = subprocess.check_output(
 )
 
 bedrock_client = boto3.client(service_name=SERVICE, region_name=REGION)
-bedrock_runtime = boto3.client('bedrock-runtime')
 
-configs = { "max_tokens_to_sample": 2000, "temperature": 0 }
-llm = Bedrock(
-  client = bedrock_runtime,
-  model_id = MODEL_NAME,
-  model_kwargs = configs,
+request_body = {
+  "anthropic_version": "bedrock-2023-05-31",
+  "max_tokens": 1000,
+  "temperature": 0,
+  "system": PROMPT_TEMPLATE,
+  "messages": [
+      {
+          "role": "user",
+          "content": [
+              {
+                  "type": "text",
+                  "text": files_diff,
+              },
+          ],
+      }
+  ],
+}
+
+response = bedrock_client.invoke_model(
+  modelId = MODEL_NAME,
+  body = json.dumps(request_body),
 )
 
-prompt_template = PromptTemplate(
-  template = PROMPT_TEMPLATE,
-  input_variables = [ 'files_diff' ]
-)
-
-generate_commit_message_chain = LLMChain(
-  llm = llm,
-  verbose = False,
-  prompt = prompt_template,
-)
-
-message = generate_commit_message_chain.run(files_diff = files_diff)
-print(message)
+print(json.loads(response.get("body").read()).get("content")[0].get("text"))

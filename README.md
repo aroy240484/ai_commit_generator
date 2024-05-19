@@ -1,7 +1,7 @@
 # ai_commit_generator
 Generative AI powered commit message generator
 
-Uses Anthropic's Claude v2.1 to generate commit message for the diff provided
+Uses Anthropic's Claude 3 Sonnet to generate commit message for the diff provided
 
 Usage:
 
